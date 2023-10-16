@@ -25,11 +25,17 @@ namespace CJTPServer
         public string Method { get; set; }
         public string Path { get; set; }
         public string Date { get; set; }
-        public BodyData Body { get; set; }
+        [JsonIgnore]
+        public BodyData Body { get { return JsonConvert.DeserializeObject<BodyData>(GarbageBody); } }
 
+        [JsonProperty("body")]
+        public string GarbageBody { get; set; }
         public class BodyData
         {
+            public BodyData() { }
+            [JsonProperty("cid")]
             public string Cid { get; set; }
+            [JsonProperty("name")]
             public string Name { get; set; }
         }
     }
@@ -98,7 +104,7 @@ namespace CJTPServer
                     {
                         var requestJson = await ReadRequestAsync(stream);
                         var request = JsonConvert.DeserializeObject<CJTPRequest>(requestJson);
-                        if(request is null)
+                        if (request is null)
                             throw new Exception(request.ToString());
                         var response = ProcessRequest(request);
                         var responseJson = System.Text.Json.JsonSerializer.Serialize(response);
@@ -109,7 +115,7 @@ namespace CJTPServer
                     {
                         Log.Error(ex, "Error while handling client request.");
                         var response = new CJTPResponse();
-                        response.Status = StatusCodes.BadRequest;
+                        response.Status = StatusCodes.BadRequest + " illegal body ";
                         var responseJson = System.Text.Json.JsonSerializer.Serialize(response);
 
                         await WriteResponseAsync(stream, responseJson);
@@ -117,8 +123,6 @@ namespace CJTPServer
                 }
             }
         }
-
-        // ... (Rest of the code remains the same)
 
         private async Task<string> ReadRequestAsync(NetworkStream stream)
         {
@@ -145,21 +149,25 @@ namespace CJTPServer
             if (string.IsNullOrEmpty(request.Method))
             {
                 response.Status = StatusCodes.BadRequest + " missing method ";
-
             }
-
-            if (string.IsNullOrEmpty(request.Path) && request.Method != "echo")
+            if (string.IsNullOrEmpty(request.Path) || !request.Path.Contains("api/categories"))
             {
-                response.Status = response.Status + StatusCodes.BadRequest + " missing path ";
+                response.Status = response.Status + StatusCodes.BadRequest + " missing resource ";
             }
-            else if (!request.Path.Contains("api/categories"))
-            {
-                response.Status = response.Status + StatusCodes.BadRequest + " missing path ";
-            }
-
             if (request.Date is null)
             {
                 response.Status = response.Status + StatusCodes.BadRequest + " missing date ";
+            }
+            else
+            {
+                try
+                {
+                    var x = DateTimeOffset.FromUnixTimeSeconds(Convert.ToInt64(request.Date));
+                }
+                catch
+                {
+                    response.Status = response.Status + StatusCodes.BadRequest + " illegal date ";
+                }
             }
 
             if (!string.IsNullOrEmpty(response.Status))
@@ -168,12 +176,10 @@ namespace CJTPServer
             switch (request.Method)
             {
                 case "create":
-
                     response = Create(request);
                     break;
 
                 case "read":
-
                     response = Read(request);
                     break;
 
@@ -182,12 +188,10 @@ namespace CJTPServer
                     break;
 
                 case "delete":
-
                     response = Delete(request);
                     break;
 
                 case "echo":
-
                     response = Echo(request);
                     break;
 
@@ -198,7 +202,7 @@ namespace CJTPServer
 
             return response;
         }
-        
+
         private int? GetIdFromPath(string caca)
         {
             try
@@ -213,6 +217,8 @@ namespace CJTPServer
             var response = new CJTPResponse();
             try
             {
+                if(string.IsNullOrEmpty(request.Body.Name))
+                { throw new Exception("Where's the name?"); }
                 _categories.Add(new Category() { Cid = _categories.Count + 1, Name = request.Body.Name });
 
                 response.Status = StatusCodes.Created;
@@ -243,7 +249,7 @@ namespace CJTPServer
                     else
                     {
                         response.Status = StatusCodes.Ok;
-                        response.Body = System.Text.Json.JsonSerializer.Serialize(_categories[x.Value]);
+                        response.Body = System.Text.Json.JsonSerializer.Serialize(_categories[x.Value-1]);
                     }
                 }
                 else

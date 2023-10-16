@@ -8,7 +8,7 @@ namespace ClientServer.Protocol
         /// <summary>
         /// Represents a successful response code (1).
         /// </summary>
-        public const string Ok = "1 OK";
+        public const string Ok = "1 Ok";
 
         /// <summary>
         /// Represents a response code indicating a resource was created (2).
