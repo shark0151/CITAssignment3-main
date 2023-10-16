@@ -23,12 +23,12 @@ namespace ClientServer.Protocol
         /// <summary>
         /// Represents a response code indicating a missing method (4).
         /// </summary>
-        public const string BadRequest = "4 BadRequest";
+        public const string BadRequest = "4 Bad Request";
 
         /// <summary>
         /// Represents a response code indicating a missing path (5).
         /// </summary>
-        public const string NotFound = "5 NotFound";
+        public const string NotFound = "5 Not Found";
 
         /// <summary>
         /// Represents a response code indicating a missing date (6).
@@ -38,6 +38,6 @@ namespace ClientServer.Protocol
         /// <summary>
         /// Represents a response code indicating an illegal method (7).
         /// </summary>
-        public const string IllegalMethod = "7 IllegalMethod";
+        public const string IllegalMethod = "7 Illegal Method";
     }
 }

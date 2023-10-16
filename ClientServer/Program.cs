@@ -1,47 +1,54 @@
 ﻿using System;
+using ClientServer.Tcp;
 using System.Threading;
 using Serilog;
-using ClientServer.Protocol;
-using ClientServer.Tcp;
 
-namespace Server
+namespace CJTPApp
 {
-    internal class Program
+    class Program
     {
-        private static CJTPServer _cjtpServer;
-        private static CJTPClient _cjtpClient;
-    
-        public static void Main(string[] args)
+        static void Main(string[] args)
         {
             ConfigureLogging();
 
-            using (_cjtpServer = new CJTPServer(5000))
+            using (CJTPServer.CJTPServer server = new CJTPServer.CJTPServer(5000))
             {
-                StartServer();
-                Thread.Sleep(999999999);
+                StartServer(server);
+                Console.WriteLine("Press Enter to exit.");
+                Console.ReadLine();
             }
-        
+            // Keep the main thread alive using Console.ReadLine()
+            
             Log.CloseAndFlush();
         }
 
-        private static void ConfigureLogging()
+        static void ConfigureLogging()
         {
-            // Configure logging
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
                 .WriteTo.Console()
                 .CreateLogger();
-        
+
             Log.Information("Logging configured");
         }
 
-        private static void StartServer()
+        static void StartServer(CJTPServer.CJTPServer server)
         {
-            // Start the server on a separate thread.
-            new Thread(_cjtpServer.Start).Start();
-        
+            new Thread(() =>
+            {
+                try
+                {
+                    server.Start();
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("Server error: {Message}", ex.Message);
+                }
+            }).Start();
+
             Log.Information("Server started");
         }
 
         
-    }}
+    }
+}
